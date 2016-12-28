@@ -1,0 +1,5 @@
+{
+"HOLD":{"GOOG": "2016-01-01", "AMZN": "2016-06-01", "NFLX": "2016-08-31"},
+"BEHOLD": ["GOOG", "AMZN", "NFLX", "TSLA","INTC","AMD","NVDA"]
+}
+
