@@ -14,6 +14,7 @@ Usage:
 import argparse
 import logging
 import numpy as np
+import os
 import ystockquote as yq
 import datetime
 import sys
@@ -156,7 +157,8 @@ if __name__ == "__main__":
         metavar="FNAME",
         type=str,
         help = "File for reading data (xxx.json)",
-        default = "stock_watchlist.json"
+        default = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "stock_watchlist.json")
     )
     parser.add_argument(
         "--span",
