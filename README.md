@@ -1,4 +1,4 @@
-# Stock Scanner for Overflutuated Stocks
+# Stock Scanner for Over-fluctuated Stocks
 
 A simple application that queries stocks of interests and return the name of 
 stocks whose fluctuation exceeded a certain moving standard deviation. 
