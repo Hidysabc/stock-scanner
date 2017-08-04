@@ -5,22 +5,20 @@ Usage:
     scan_stocks.py --f filename.json --span timespan --logging info/debug/warn
     ex: ./scan_stocks.py --f "stock_watchlist.json" --span 90 --logging debug
 
-    --f: filename storing the list of hold and behold stocks 
+    --f: filename storing the list of hold and behold stocks
          (Default:"stock_watchlist.json")
     --span: Time span to trace back in days (Default: 90 days)
-    
+
 """
 
 import argparse
 import logging
 import numpy as np
 import os
-import ystockquote as yq
 import datetime
 import sys
-import argparse
 import json
-
+from alphavantage import get_historical_prices, get_price
 
 FORMAT = '%(asctime)-15s %(name)-8s %(levelname)s %(message)s'
 LOG_MAP = {
@@ -32,29 +30,29 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('stock_scanner')
 
 
-def two_sigma(symbol,start_date, span):
+def two_sigma(symbol,end_date, span, apikey_filename):
     #today = datetime.datetime.today().date()
     #three_months_ago = (datetime.datetime.today()-datetime.timedelta(span)).date()
-    start_date_parse = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
-    end_date_parse = start_date_parse -datetime.timedelta(span)
-    stock_data = yq.get_historical_prices(symbol,str(end_date_parse), start_date)
+    # end_date represents day closer to the present
+    end_date_parse = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+    start_date_parse = end_date_parse -datetime.timedelta(span)
+    close = get_historical_prices(symbol,end_date, str(start_date_parse), apikey_filename)
+    #print(close)
+    '''
     close = np.zeros(len(stock_data))
     c = 0
     for i in stock_data:
         close[c] = stock_data[i]['Close']
         c = c+1
-
+    '''
     span_avg = close.mean()
     span_std = close.std()
-    
     two_sigma_above = span_avg + span_std*2
     two_sigma_below = span_avg - span_std*2
-    
     logger.debug('SYMBOL: {}'.format(symbol))
     logger.debug('{} day average: {:.2f}'.format(span, span_avg))
     logger.debug('2 sigma above: {:.2f}'.format(two_sigma_above))
     logger.debug('2 sigma below: {:.2f}'.format(two_sigma_below))
-                        
 
     return symbol, span_avg, two_sigma_above, two_sigma_below
 
@@ -76,12 +74,12 @@ class SuggestSell(SuggestStock):
 
 
 
-def read_stock_list(fname,span):
+def read_stock_list(fname, span, apikey_filename):
     symbol_dict = json.load(open(fname,"r"))
     suggest_selling_list = []
     suggest_buying_list = []
     suggesting_dict = {}
- 
+
     for i in symbol_dict:
         if i == "HOLD":
             logger.info("Query held stocks...")
@@ -89,12 +87,12 @@ def read_stock_list(fname,span):
                 symbol = j
                 logger.debug(symbol)
                 #start_date = symbol_dict[i][j]
-                start_date = str(datetime.datetime.today().date())
-                symbol_name,span_avg,two_sigma_above,two_sigma_below = two_sigma(symbol,start_date, span)
-                symbol_current_price = np.float(yq.get_price(symbol))
+                end_date = str(datetime.datetime.today().date())
+                symbol_name,span_avg,two_sigma_above,two_sigma_below = two_sigma(symbol,end_date, span, apikey_filename)
+                symbol_current_price = np.float(get_price(symbol, apikey_filename))
                 if symbol_current_price >= two_sigma_above:
                     suggest_selling_list.append(
-                        SuggestSell(symbol, symbol_current_price, 
+                        SuggestSell(symbol, symbol_current_price,
                                     two_sigma_above)
                     )
         elif i == "BEHOLD":
@@ -102,28 +100,29 @@ def read_stock_list(fname,span):
             for j in range(len(symbol_dict[i])):
                 symbol = symbol_dict[i][j]
                 logger.debug(symbol)
-                start_date = str(datetime.datetime.today().date())
-                symbol_name, span_avg, two_sigma_above, two_sigma_below = two_sigma(symbol, start_date, span)
-                symbol_current_price = np.float(yq.get_price(symbol))
+                end_date = str(datetime.datetime.today().date())
+                symbol_name, span_avg, two_sigma_above, two_sigma_below = two_sigma(symbol, end_date, span, apikey_filename)
+                symbol_current_price = np.float(get_price(symbol, apikey_filename))
                 if symbol_current_price <= two_sigma_below:
                     suggest_buying_list.append(
-                        SuggestBuy(symbol, symbol_current_price, 
+                        SuggestBuy(symbol, symbol_current_price,
                                    two_sigma_below)
                     )
-    return suggest_selling_list, suggest_buying_list        
-    
+    return suggest_selling_list, suggest_buying_list
+
 
 def main(args):
     fname = args.f
     span = args.span
+    apikey_filename = args.apikey
     logger.setLevel(LOG_MAP[args.logging.lower()])
-    suggest_selling_list, suggest_buying_list = read_stock_list(fname, span)
+    suggest_selling_list, suggest_buying_list = read_stock_list(fname, span, apikey_filename)
     if suggest_selling_list:
         logger.info("Suggest stocks to sell")
         for ss in suggest_selling_list:
             logger.info("{sym}: {p} ({two_sig})".format(
-                sym=ss.symbol, 
-                p=ss.todays_price, 
+                sym=ss.symbol,
+                p=ss.todays_price,
                 two_sig=ss.two_sigma_above
             ))
     else:
@@ -132,8 +131,8 @@ def main(args):
         logger.info("Suggest stocks to buy")
         for sb in suggest_buying_list:
             logger.info("{sym}: {p} ({two_sig})".format(
-                sym=sb.symbol, 
-                p=sb.todays_price, 
+                sym=sb.symbol,
+                p=sb.todays_price,
                 two_sig=sb.two_sigma_below
             ))
     else:
@@ -147,7 +146,7 @@ def main(args):
     #span = args.span
     #two_sigma(symbol, start_date, span)
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -163,16 +162,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "--span",
         metavar="SPAN",
-        type=int, 
-        help = "Time span to trace back in days", 
+        type=int,
+        help = "Time span to trace back in days",
         default = 90
     )
     parser.add_argument(
         "--logging",
         metavar="LOG_LEVEL",
-        type=str, 
-        help = "Log level", 
+        type=str,
+        help = "Log level",
         default = "info"
+    )
+    parser.add_argument(
+        "--apikey",
+        metavar="APIKEY_FILENAME",
+        type=str,
+        help = "File path containing API key",
+        default = "./apikey.json"
     )
     args = parser.parse_args()
     main(args)

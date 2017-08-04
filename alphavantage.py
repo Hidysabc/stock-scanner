@@ -4,8 +4,6 @@ import requests
 import datetime
 import pandas as pd
 
-f_apikey = '/workspace/practices/apikey.json'
-
 def get_apikey(f):
     #reading apikey.json
     apikey = list(json.load(open(f,"r")).values())[-1]
@@ -17,22 +15,22 @@ def get_apikey(f):
     return apikey
 
 
-def query_time_series_intraday(symbol,interval='1min',outputsize= 'compact',datatype='json'):
+def query_time_series_intraday(symbol, f_apikey, interval='1min',outputsize= 'compact',datatype='json'):
     apikey = get_apikey(f_apikey)
     request = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol='+symbol+'&interval='+interval+'&datatype='+datatype+'&outputsize='+outputsize+'&apikey='+apikey
     items = requests.get(request).json()
     return items
 
-def query_time_series_daily(symbol,outputsize= 'compact',datatype='json'):
+def query_time_series_daily(symbol, f_apikey, outputsize= 'compact',datatype='json'):
     apikey = get_apikey(f_apikey)
     request = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='+symbol+'&datatype='+datatype+'&outputsize='+outputsize+'&apikey='+apikey
     items = requests.get(request).json()
     return items
 
 
-def get_historical_prices(symbol,end_date,start_date):
+def get_historical_prices(symbol, end_date, start_date, apikey_filename):
     #stocks = json.load(open(f,"r"))
-    stocks = query_time_series_daily(symbol)
+    stocks = query_time_series_daily(symbol, apikey_filename)
     k = list(stocks.keys())
     stocks = stocks[k[-1]]
     dates = list(stocks.keys())
@@ -51,13 +49,12 @@ def get_historical_prices(symbol,end_date,start_date):
     #print(close)
     return close
 
-def get_price(symbol):
+def get_price(symbol, apikey_filename):
     #stocks = json.load(open(f,"r"))
-    stocks = query_time_series_intraday(symbol)
+    stocks = query_time_series_intraday(symbol, apikey_filename)
     k = list(stocks.keys())
     stocks = stocks[k[-1]]
     dates = list(stocks.keys())
     current = stocks[dates[0]]["4. close"]
     #print(current)
-
     return current
