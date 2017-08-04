@@ -3,12 +3,14 @@
 
 Usage:
     scan_stocks.py --f filename.json --span timespan --logging info/debug/warn
+    --apikey apikey.json
     ex: ./scan_stocks.py --f "stock_watchlist.json" --span 90 --logging debug
 
     --f: filename storing the list of hold and behold stocks
          (Default:"stock_watchlist.json")
     --span: Time span to trace back in days (Default: 90 days)
 
+    --apikey: filepath containing apikey for Alphavantage service
 """
 
 import argparse
@@ -16,7 +18,6 @@ import logging
 import numpy as np
 import os
 import datetime
-import sys
 import json
 from alphavantage import get_historical_prices, get_price
 
@@ -31,20 +32,10 @@ logger = logging.getLogger('stock_scanner')
 
 
 def two_sigma(symbol,end_date, span, apikey_filename):
-    #today = datetime.datetime.today().date()
-    #three_months_ago = (datetime.datetime.today()-datetime.timedelta(span)).date()
     # end_date represents day closer to the present
     end_date_parse = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
     start_date_parse = end_date_parse -datetime.timedelta(span)
     close = get_historical_prices(symbol,end_date, str(start_date_parse), apikey_filename)
-    #print(close)
-    '''
-    close = np.zeros(len(stock_data))
-    c = 0
-    for i in stock_data:
-        close[c] = stock_data[i]['Close']
-        c = c+1
-    '''
     span_avg = close.mean()
     span_std = close.std()
     two_sigma_above = span_avg + span_std*2
@@ -78,7 +69,6 @@ def read_stock_list(fname, span, apikey_filename):
     symbol_dict = json.load(open(fname,"r"))
     suggest_selling_list = []
     suggest_buying_list = []
-    suggesting_dict = {}
 
     for i in symbol_dict:
         if i == "HOLD":
@@ -86,7 +76,6 @@ def read_stock_list(fname, span, apikey_filename):
             for j in symbol_dict[i]:
                 symbol = j
                 logger.debug(symbol)
-                #start_date = symbol_dict[i][j]
                 end_date = str(datetime.datetime.today().date())
                 symbol_name,span_avg,two_sigma_above,two_sigma_below = two_sigma(symbol,end_date, span, apikey_filename)
                 symbol_current_price = np.float(get_price(symbol, apikey_filename))
@@ -139,12 +128,7 @@ def main(args):
         logger.info("No stock to buy.")
 
     logger.info("Done :)")
-    #symbol = input('Please input the stock symbol you want to query:  ')
 
-    #symbol = args.symbol
-    #start_date = args.start_date
-    #span = args.span
-    #two_sigma(symbol, start_date, span)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -178,7 +162,8 @@ if __name__ == "__main__":
         metavar="APIKEY_FILENAME",
         type=str,
         help = "File path containing API key",
-        default = "./apikey.json"
+        default = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "apikey.json")
     )
     args = parser.parse_args()
     main(args)
