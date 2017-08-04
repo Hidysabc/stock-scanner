@@ -126,7 +126,7 @@ def main(args):
                 two_sig=ss.two_sigma_above
             ))
     else:
-        logger.info("No stock to be sold.")
+        logger.info("No stock to sell.")
     if suggest_buying_list:
         logger.info("Suggest stocks to buy")
         for sb in suggest_buying_list:

@@ -1,8 +1,8 @@
 import numpy as np
 import json
 import requests
-import datetime
-import pandas as pd
+#import datetime
+#import pandas as pd
 
 def get_apikey(f):
     #reading apikey.json
@@ -34,19 +34,8 @@ def get_historical_prices(symbol, end_date, start_date, apikey_filename):
     k = list(stocks.keys())
     stocks = stocks[k[-1]]
     dates = list(stocks.keys())
-    start_date_parse = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
-    end_date_parse = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
-    span = int((end_date_parse - start_date_parse)/datetime.timedelta(1))
-    dateindex = pd.date_range(start_date,periods = span, freq = "D")
+    dateindex = np.arange(start_date, end_date, dtype = "datetime64[D]")
     close = np.array([float(stocks[i]["4. close"]) for i in dateindex.astype(str) if i in dates])
-    #close = np.array([float(stocks[i]["4. close"]) for i in stocks])
-    #start_date_parse = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
-    #end_date_parse = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
-    #span = int((end_date_parse - start_date_parse)/datetime.timedelta(1))
-    #dateindex = pd.date_range(start_date,periods = span, freq = "D")
-    #close = [close[i] for i in dateindex.astype(str) if i in dates]
-    #close = close[dates.index(end_date):dates.index(start_date)]
-    #print(close)
     return close
 
 def get_price(symbol, apikey_filename):
