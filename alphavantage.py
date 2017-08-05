@@ -1,8 +1,6 @@
 import numpy as np
 import json
 import requests
-#import datetime
-#import pandas as pd
 
 def get_apikey(f):
     #reading apikey.json
@@ -29,21 +27,16 @@ def query_time_series_daily(symbol, f_apikey, outputsize= 'compact',datatype='js
 
 
 def get_historical_prices(symbol, end_date, start_date, apikey_filename):
-    #stocks = json.load(open(f,"r"))
-    stocks = query_time_series_daily(symbol, apikey_filename)
-    k = list(stocks.keys())
-    stocks = stocks[k[-1]]
+    qout = query_time_series_daily(symbol, apikey_filename)
+    stocks = qout["Time Series (Daily)"]
     dates = list(stocks.keys())
     dateindex = np.arange(start_date, end_date, dtype = "datetime64[D]")
     close = np.array([float(stocks[i]["4. close"]) for i in dateindex.astype(str) if i in dates])
     return close
 
 def get_price(symbol, apikey_filename):
-    #stocks = json.load(open(f,"r"))
-    stocks = query_time_series_intraday(symbol, apikey_filename)
-    k = list(stocks.keys())
-    stocks = stocks[k[-1]]
+    qout = query_time_series_intraday(symbol, apikey_filename)
+    stocks = qout["Time Series (1min)"]
     dates = list(stocks.keys())
     current = stocks[dates[0]]["4. close"]
-    #print(current)
     return current
