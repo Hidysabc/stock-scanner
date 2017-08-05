@@ -40,10 +40,10 @@ def two_sigma(symbol,end_date, span, apikey_filename):
     span_std = close.std()
     two_sigma_above = span_avg + span_std*2
     two_sigma_below = span_avg - span_std*2
-    logger.debug('SYMBOL: {}'.format(symbol))
-    logger.debug('{} day average: {:.2f}'.format(span, span_avg))
-    logger.debug('2 sigma above: {:.2f}'.format(two_sigma_above))
-    logger.debug('2 sigma below: {:.2f}'.format(two_sigma_below))
+    logger.info('SYMBOL: {}'.format(symbol))
+    logger.info('{} day average: {:.2f}'.format(span, span_avg))
+    logger.info('2 sigma above: {:.2f}'.format(two_sigma_above))
+    logger.info('2 sigma below: {:.2f}'.format(two_sigma_below))
 
     return symbol, span_avg, two_sigma_above, two_sigma_below
 
