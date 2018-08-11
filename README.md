@@ -5,12 +5,6 @@ stocks whose fluctuation exceeded a certain moving standard deviation.
 
 ## Installation
 
-The script use `ystockquote` package. To install, do:
-
-```bash
-pip install ystockquote
-```
-
 The package contains a sample json file listing stocks of interest. Stocks in
 `HOLD` are stocks the user currently holding, and their day of purchase.
 Stocks in `BEHOLD` are stocks to watch out for possible buy. To try out, 
